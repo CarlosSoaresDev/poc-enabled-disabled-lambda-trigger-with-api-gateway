@@ -2,11 +2,13 @@ import json
 import requests
 import logging
 import os
+import boto3
 
-from sqs_service import SqsService
-
-API_URI = 'https://random-data-api.com/api/v2/banks'
-
+session = boto3.Session(
+    aws_access_key_id=os.environ["ACCESS_KEY"],
+    aws_secret_access_key=os.environ["SECRET_KEY"]
+)
+client = session.client('lambda')
 
 def lambda_handler(event, context):
     try:
@@ -18,33 +20,20 @@ def lambda_handler(event, context):
 
 
 def process_message(event):
-    for record in event['Records']:
-        body = json.loads(record["body"])
-        session = body["StartSession"]
-        logging.info(f'Iniciando a Sessão: {session}')
+    try:
+      body = json.loads(event['body'])
+      logging.info(f'Start enable or disable trigger lambda api')
+      
+      response = client.update_event_source_mapping(
+      BatchSize=10,
+      Enabled=False,
+      FunctionName='app-process-queue-one',
+      UUID='2003d51f-9712-40d4-a7a9-8369619b45f8',
+)
 
-        try:
-            response = requests.get(API_URI)
-            if response.ok == False:
-                raise Exception("Response API failed")
-
-            response_dict = json.loads(response.text)
-            value = float(response_dict['routing_number'])
-
-            if session == 'schedule-by-minute':
-                set_value_database(f'{session} - value: {value}', "table_consult_1")
-            else:
-                set_value_database(f'{session} - value: {value}', "table_consult_1")
-        except Exception as ex:
-            logging.error(str(ex))
-            occurence(record)
+    except Exception as ex:
+        logging.error(str(ex))
 
 
-def occurence(record):
-    sqsService = SqsService
-    sqsService.send_messager_to_occurence(message_body=record['body'])
-    sqsService.delete_current_messager(receipt_handle=record['receiptHandle'])
-
-
-def set_value_database(value, table):
+def set_lambda_event_soursing(value, table):
     logging.info(f'Table: {table} - Value: {value}')

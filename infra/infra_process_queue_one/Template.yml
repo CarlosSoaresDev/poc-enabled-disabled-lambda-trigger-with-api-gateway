@@ -116,6 +116,9 @@ Resources:
               - Effect: Allow
                 Action: "sqs:*"
                 Resource: "*"
+              - Effect: Allow
+                Action: "lambda:*"
+                Resource: "*"
               
   LambdaFunctionEventSourceMapping:
    Type: AWS::Lambda::EventSourceMapping
