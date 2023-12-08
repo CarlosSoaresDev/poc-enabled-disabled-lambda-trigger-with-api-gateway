@@ -1,9 +1,14 @@
-name: Infra poc event bridge schedule to sqs to lambda
+name: Infra poc enabled and disabled lambda trigger
 
 env:
-  service-name: app-process-queue-one
-  working-directory-build: ./services/app_process_queue_one
-  working-directory-publish: ./infra/infra_process_queue_one
+  ### service one
+  service-name-app-process-one: app-process-queue-one  
+  working-directory-app-process-one-build: ./services/app_process_queue_one
+  working-directory-app-process-one-publish: ./infra/infra_process_queue_one
+  ### service two
+  service-name-app-process-two: app-process-queue-two
+  working-directory-app-process-two-build: ./services/app_process_queue_two
+  working-directory-app-process-two-publish: ./infra/infra_process_queue_two
 
 on:
   push:
@@ -12,31 +17,27 @@ on:
     branches: [main]
 
 jobs:
-  build:
-    name: Build
+  pre-build:
+    name: Pre-Build
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout
       uses: actions/checkout@master 
-
     - name: Setup python     
       uses: actions/setup-python@v4
       with:
        python-version: '3.10'
 
-  deploy:
-    name: Deploy       
+  build:
+    name: Build       
     runs-on: ubuntu-latest
-    needs: build
+    needs: pre-build
     steps:  
      - name: Checkout
        uses: actions/checkout@master 
-
      - name: root directory
        run: ls -R
-       working-directory: ${{env.worker-directory-root}}         
-    
+       working-directory: ${{env.worker-directory-root}}           
      - name: Configure AWS credentials
        id: credentialsaws
        uses: aws-actions/configure-aws-credentials@v1
@@ -44,43 +45,83 @@ jobs:
          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
          aws-region: ${{ secrets.AWS_REGION }}
-
-     - name: Create release to layer
+     - name: Generate and Publish layer artefact [ app-process-queue-one ]
        run: |
           echo " ########## Start generate layer packges ##########"
-          ls -R
           mkdir -p layer/python/lib/python3.10/site-packages
-          ls -R
           pip3 install -r requirements.txt -t layer/python/lib/python3.10/site-packages/
           cd layer
           ls -R
-          zip -r ${{env.service-name}}-layer.zip *
-          ls -R
-          aws s3 cp ./${{env.service-name}}-layer.zip s3://s3-artefact-bucket
+          echo " ########## Start Zip layer ##########"
+          zip -r ${{env.service-name-app-process-one}}-layer.zip *
+          aws s3 cp ./${{env.service-name-app-process-one}}-layer.zip s3://s3-artefact-bucket
+          echo " ########## End Zip layer ##########"
           cd ..
-          ls -R
           rm -r layer
-          ls -R
+          echo " ########## End generate layer packges ##########"
+       working-directory: ${{env.working-directory-app-process-one-build}}  
+     - name: Generate and Publish layer artefact [ app-process-queue-two ]
+       run: |
           echo " ########## Start generate layer packges ##########"
-       working-directory: ${{env.working-directory-build}}  
-
-    #  - name: Create release to app lambda
-    #    run: |
-    #       echo " ########## Start generate lambda app ##########"
-    #       ls -R
-    #       zip -r ${{env.service-name}}-layer.zip *
-    #       ls -R
-    #       aws s3 cp ./${{env.service-name}}-layer.zip s3://s3-artefact-bucket
-         
-    #       echo " ########## Start generate lambda app ##########"
-    #    working-directory: ${{env.working-directory-build}}  
-
+          mkdir -p layer/python/lib/python3.10/site-packages
+          pip3 install -r requirements.txt -t layer/python/lib/python3.10/site-packages/
+          cd layer
+          ls -R
+          echo " ########## Start Zip layer ##########"
+          zip -r ${{env.app-process-queue-two}}-layer.zip *
+          aws s3 cp ./${{env.app-process-queue-two}}-layer.zip s3://s3-artefact-bucket
+          echo " ########## End Zip layer ##########"
+          cd ..
+          rm -r layer
+          echo " ########## End generate layer packges ##########"
+       working-directory: ${{env.working-directory-app-process-two-build}}  
+   
+  deploy-app-process-queue-one:
+    name: Deploy       
+    runs-on: ubuntu-latest
+    needs: build
+    steps:  
+     - name: root directory
+       run: ls -R
+       working-directory: ${{env.worker-directory-root}}         
+     - name: Configure AWS credentials
+       id: credentialsaws
+       uses: aws-actions/configure-aws-credentials@v1
+       with:
+         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+         aws-region: ${{ secrets.AWS_REGION }}
      - name: AWS Deploy CloudFormation Stack
        run: |
            ls -R
            aws cloudformation deploy \
            --template-file Template.yml \
            --capabilities CAPABILITY_NAMED_IAM \
-           --parameter-overrides  LambdaTransactionProcessorFunctionName=${{ env.service-name }} \
-           --stack-name ${{env.service-name}}   
-       working-directory: ${{env.working-directory-publish}}  
+           --parameter-overrides  LambdaTransactionProcessorFunctionName=${{ env.service-name-app-process-one }} SQSQueueName=${{ env.service-name-app-process-one }}-queue EventBridgeScheduleByMinuteName=${{ env.service-name-app-process-one }}-scheduler \
+           --stack-name ${{env.service-name-app-process-one}}   
+       working-directory: ${{env.working-directory-app-process-one-publish}}  
+  
+  deploy-app-process-queue-two:
+    name: Deploy       
+    runs-on: ubuntu-latest
+    needs: build
+    steps:  
+     - name: root directory
+       run: ls -R
+       working-directory: ${{env.worker-directory-root}}         
+     - name: Configure AWS credentials
+       id: credentialsaws
+       uses: aws-actions/configure-aws-credentials@v1
+       with:
+         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+         aws-region: ${{ secrets.AWS_REGION }}
+     - name: AWS Deploy CloudFormation Stack
+       run: |
+           ls -R
+           aws cloudformation deploy \
+           --template-file Template.yml \
+           --capabilities CAPABILITY_NAMED_IAM \
+           --parameter-overrides  LambdaTransactionProcessorFunctionName=${{ env.service-name-app-process-two }} SQSQueueName=${{ env.service-name-app-process-two }}-queue EventBridgeScheduleByMinuteName=${{ env.service-name-app-process-two }}-scheduler \
+           --stack-name ${{env.service-name-app-process-two}}   
+       working-directory: ${{env.working-directory-app-process-two-publish}}  

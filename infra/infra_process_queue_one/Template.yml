@@ -1,3 +1,4 @@
+Description: Get up app process queue one service
 AWSTemplateFormatVersion: "2010-09-09"
 
 Parameters:
@@ -6,40 +7,38 @@ Parameters:
     Default: s3-artefact-bucket
   SQSQueueName:
     Type: String
-    Default: scheduler-queue
-  EventBridgeScheduleBySecondsName:
+  EventBridgeScheduleByMinuteName:
     Type: String
-    Default: schedule-by-seconds
   LambdaTransactionProcessorFunctionName:
     Type: String
 
 Resources:
  
-  SchedulerSecondsQueue:
+  SchedulerMinuteQueue:
     Type: AWS::SQS::Queue
     Properties:
      QueueName: !Ref SQSQueueName
      RedrivePolicy:
-       deadLetterTargetArn: !GetAtt SchedulerSecondsQueueDQL.Arn
+       deadLetterTargetArn: !GetAtt SchedulerMinuteQueueDQL.Arn
        maxReceiveCount: 3
   
-  SchedulerSecondsQueueDQL:
+  SchedulerMinuteQueueDQL:
     Type: AWS::SQS::Queue
     Properties:
      QueueName: !Sub '${SQSQueueName}-dql'
   
-  EventBridgeSchedulerBySeconds:
+  EventBridgeSchedulerByMinute:
     Type: AWS::Scheduler::Schedule
     Properties: 
-      Description: "Execute Schedule Seconds by Seconds"
+      Description: "Execute Schedule minute by minute"
       FlexibleTimeWindow: 
         Mode : "OFF"
       GroupName: "default"
-      Name: !Ref EventBridgeScheduleBySecondsName
+      Name: !Ref EventBridgeScheduleByMinuteName
       ScheduleExpression: "rate(1 minutes)"
       ScheduleExpressionTimezone: "America/Sao_Paulo"
       Target: 
-        Arn: !GetAtt SchedulerSecondsQueue.Arn
+        Arn: !GetAtt SchedulerMinuteQueue.Arn
         RoleArn: !GetAtt EventBridgeScheduleRole.Arn
         Input: '{"StartSession": true }'
   
@@ -62,7 +61,7 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: "sqs:SendMessage"
-                Resource: !GetAtt SchedulerSecondsQueue.Arn
+                Resource: !GetAtt SchedulerMinuteQueue.Arn
   
   LambdaTransactionProcessorFunctionLayer:
     Type: "AWS::Lambda::LayerVersion"
@@ -123,5 +122,5 @@ Resources:
    Properties:
      BatchSize: 10
      Enabled: true
-     EventSourceArn: !GetAtt SchedulerSecondsQueue.Arn
+     EventSourceArn: !GetAtt SchedulerMinuteQueue.Arn
      FunctionName: !GetAtt LambdaTransactionProcessorFunction.Arn
