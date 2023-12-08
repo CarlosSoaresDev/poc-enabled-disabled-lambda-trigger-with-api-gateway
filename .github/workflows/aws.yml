@@ -75,6 +75,24 @@ jobs:
           rm -r layer
           echo " ########## End generate layer packges ##########"
        working-directory: ${{env.working-directory-app-process-two-build}}  
+     - name: Create release to app lambda [app-process-queue-one ]
+       run: |
+          echo " ########## Start generate lambda app ##########"
+          ls -R
+          zip -r ${{env.service-name-app-process-one}}.zip *
+          ls -R
+          aws s3 cp ./${{env.service-name-app-process-one}}.zip s3://s3-artefact-bucket/Artefact         
+          echo " ########## End generate lambda app ##########"
+       working-directory: ${{env.working-directory-app-process-two-build}}  
+     - name: Create release to app lambda [app-process-queue-two ]
+       run: |
+          echo " ########## Start generate lambda app ##########"
+          ls -R
+          zip -r ${{env.service-name-app-process-two}}.zip *
+          ls -R
+          aws s3 cp ./${{env.service-name-app-process-two}}.zip s3://s3-artefact-bucket/Artefact         
+          echo " ########## End generate lambda app ##########"
+       working-directory: ${{env.working-directory-app-process-two-build}}  
    
   deploy-app-process-queue-one:
     name: Deploy app process queue one      
