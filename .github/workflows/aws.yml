@@ -64,16 +64,16 @@ jobs:
           echo " ########## Start generate layer packges ##########"
        working-directory: ${{env.working-directory-build}}  
 
-     - name: Create release to app lambda
-       run: |
-          echo " ########## Start generate lambda app ##########"
-          ls -R
-          zip -r ${{env.service-name}}-layer.zip *
-          ls -R
-          aws s3 cp ./${{env.service-name}}-layer.zip s3://s3-artefact-bucket
+    #  - name: Create release to app lambda
+    #    run: |
+    #       echo " ########## Start generate lambda app ##########"
+    #       ls -R
+    #       zip -r ${{env.service-name}}-layer.zip *
+    #       ls -R
+    #       aws s3 cp ./${{env.service-name}}-layer.zip s3://s3-artefact-bucket
          
-          echo " ########## Start generate lambda app ##########"
-       working-directory: ${{env.working-directory-build}}  
+    #       echo " ########## Start generate lambda app ##########"
+    #    working-directory: ${{env.working-directory-build}}  
 
      - name: AWS Deploy CloudFormation Stack
        run: |
