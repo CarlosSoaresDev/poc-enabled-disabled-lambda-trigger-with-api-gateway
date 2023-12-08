@@ -36,7 +36,7 @@ Resources:
         Mode : "OFF"
       GroupName: "default"
       Name: !Ref EventBridgeScheduleBySecondsName
-      ScheduleExpression: "rate(5 Seconds)"
+      ScheduleExpression: "rate(5 seconds)"
       ScheduleExpressionTimezone: "America/Sao_Paulo"
       Target: 
         Arn: !GetAtt SchedulerSecondsQueue.Arn
