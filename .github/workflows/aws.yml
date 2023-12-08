@@ -45,21 +45,21 @@ jobs:
          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
          aws-region: ${{ secrets.AWS_REGION }}
-     - name: Generate and Publish layer artefact [ app-process-queue-one ]
-       run: |
-          echo " ########## Start generate layer packges ##########"
-          mkdir -p layer/python/lib/python3.10/site-packages
-          pip3 install -r requirements.txt -t layer/python/lib/python3.10/site-packages/
-          cd layer
-          ls -R
-          echo " ########## Start Zip layer ##########"
-          zip -r ${{env.service-name-app-process-one}}-layer.zip *
-          aws s3 cp ./${{env.service-name-app-process-one}}-layer.zip s3://s3-artefact-bucket
-          echo " ########## End Zip layer ##########"
-          cd ..
-          rm -r layer
-          echo " ########## End generate layer packges ##########"
-       working-directory: ${{env.working-directory-app-process-one-build}}  
+    #  - name: Generate and Publish layer artefact [ app-process-queue-one ]
+    #    run: |
+    #       echo " ########## Start generate layer packges ##########"
+    #       mkdir -p layer/python/lib/python3.10/site-packages
+    #       pip3 install -r requirements.txt -t layer/python/lib/python3.10/site-packages/
+    #       cd layer
+    #       ls -R
+    #       echo " ########## Start Zip layer ##########"
+    #       zip -r ${{env.service-name-app-process-one}}-layer.zip *
+    #       aws s3 cp ./${{env.service-name-app-process-one}}-layer.zip s3://s3-artefact-bucket
+    #       echo " ########## End Zip layer ##########"
+    #       cd ..
+    #       rm -r layer
+    #       echo " ########## End generate layer packges ##########"
+    #    working-directory: ${{env.working-directory-app-process-one-build}}  
      - name: Generate and Publish layer artefact [ app-process-queue-two ]
        run: |
           echo " ########## Start generate layer packges ##########"
