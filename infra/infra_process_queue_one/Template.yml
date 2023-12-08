@@ -4,76 +4,45 @@ Parameters:
   S3ArtefactBucketName:
     Type: String
     Default: s3-artefact-bucket
-  OcurrenceQueueName:
-    Type: String
-    Default: ocurrence-queue
   SQSQueueName:
     Type: String
     Default: scheduler-queue
-  EventBridgeScheduleByMinuteName:
+  EventBridgeScheduleBySecondsName:
     Type: String
-    Default: schedule-by-minute
-  EventBridgeScheduleByWeekAndHoursName:
-    Type: String
-    Default: schedule-by-week-and-hours
+    Default: schedule-by-seconds
   LambdaTransactionProcessorFunctionName:
     Type: String
-    Default: transactions-processor  
-  AccessKey:
-    Type: String
-  SecretKey:
-    Type: String
-    Default: transactions-processor  
 
 Resources:
-  OcurrenceQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-     QueueName: !Ref OcurrenceQueueName
  
-  SchedulerMinutesQueue:
+  SchedulerSecondsQueue:
     Type: AWS::SQS::Queue
     Properties:
      QueueName: !Ref SQSQueueName
      RedrivePolicy:
-       deadLetterTargetArn: !GetAtt SchedulerMinutesQueueDQL.Arn
+       deadLetterTargetArn: !GetAtt SchedulerSecondsQueueDQL.Arn
        maxReceiveCount: 3
   
-  SchedulerMinutesQueueDQL:
+  SchedulerSecondsQueueDQL:
     Type: AWS::SQS::Queue
     Properties:
      QueueName: !Sub '${SQSQueueName}-dql'
   
-  EventBridgeSchedulerByMinute:
+  EventBridgeSchedulerBySeconds:
     Type: AWS::Scheduler::Schedule
     Properties: 
-      Description: "Execute Schedule minute by minute"
+      Description: "Execute Schedule Seconds by Seconds"
       FlexibleTimeWindow: 
         Mode : "OFF"
       GroupName: "default"
-      Name: !Ref EventBridgeScheduleByMinuteName
-      ScheduleExpression: "rate(1 minutes)"
+      Name: !Ref EventBridgeScheduleBySecondsName
+      ScheduleExpression: "rate(5 Seconds)"
       ScheduleExpressionTimezone: "America/Sao_Paulo"
       Target: 
-        Arn: !GetAtt SchedulerMinutesQueue.Arn
+        Arn: !GetAtt SchedulerSecondsQueue.Arn
         RoleArn: !GetAtt EventBridgeScheduleRole.Arn
-        Input: '{"StartSession": "schedule-by-minute"}'
+        Input: '{"StartSession": true }'
   
-  EventBridgeSchedulerByWeekAndHours:
-    Type: AWS::Scheduler::Schedule
-    Properties: 
-      Description: "Execute Schedule minute by minute"
-      FlexibleTimeWindow: 
-        Mode : "OFF"
-      GroupName: "default"
-      Name: !Ref EventBridgeScheduleByWeekAndHoursName
-      ScheduleExpression: "cron(01 05 ? * 2-6 *)"
-      ScheduleExpressionTimezone: "America/Sao_Paulo"
-      Target: 
-        Arn: !GetAtt SchedulerMinutesQueue.Arn
-        RoleArn: !GetAtt EventBridgeScheduleRole.Arn
-        Input: '{"StartSession": "schedule-by-week-and-hours"}'
-
   EventBridgeScheduleRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -93,7 +62,7 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: "sqs:SendMessage"
-                Resource: !GetAtt SchedulerMinutesQueue.Arn
+                Resource: !GetAtt SchedulerSecondsQueue.Arn
   
   LambdaTransactionProcessorFunctionLayer:
     Type: "AWS::Lambda::LayerVersion"
@@ -119,12 +88,6 @@ Resources:
         S3Key: !Sub '${LambdaTransactionProcessorFunctionName}.zip'
       Layers: 
         - !Ref LambdaTransactionProcessorFunctionLayer 
-      Environment:
-          Variables:
-            ACCESS_KEY: !Ref AccessKey
-            SECRET_KEY: !Ref SecretKey
-            SQS_OCCURENCE_QUEUE_URL: !GetAtt OcurrenceQueue.QueueUrl
-            SQS_CURRENT_QUEUE_URL: !GetAtt SchedulerMinutesQueue.QueueUrl
 
   LambdaTransactionProcessorFunctionRole:
     Type: 'AWS::IAM::Role'
@@ -160,5 +123,5 @@ Resources:
    Properties:
      BatchSize: 10
      Enabled: true
-     EventSourceArn: !GetAtt SchedulerMinutesQueue.Arn
+     EventSourceArn: !GetAtt SchedulerSecondsQueue.Arn
      FunctionName: !GetAtt LambdaTransactionProcessorFunction.Arn

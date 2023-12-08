@@ -1,12 +1,10 @@
 import json
+import string
 import requests
 import logging
 import os
 
-from sqs_service import SqsService
-
 API_URI = 'https://random-data-api.com/api/v2/banks'
-
 
 def lambda_handler(event, context):
     try:
@@ -16,35 +14,25 @@ def lambda_handler(event, context):
     except Exception as ex:
         logging.error(str(ex))
 
-
-def process_message(event):
+def process_message(event: dict) -> None:
     for record in event['Records']:
         body = json.loads(record["body"])
-        session = body["StartSession"]
-        logging.info(f'Iniciando a Sessão: {session}')
+        isStartSession = body["StartSession"]
+        logging.info(f'Start an new session')
 
         try:
-            response = requests.get(API_URI)
-            if response.ok == False:
-                raise Exception("Response API failed")
+            if isStartSession:
+               response = requests.get(API_URI)
+               if response.ok == False:
+                   raise Exception("Response API failed")
 
-            response_dict = json.loads(response.text)
-            value = float(response_dict['routing_number'])
+               response_dict = json.loads(response.text)
+               routing_number = float(response_dict['routing_number'])
 
-            if session == 'schedule-by-minute':
-                set_value_database(f'{session} - value: {value}', "table_consult_1")
-            else:
-                set_value_database(f'{session} - value: {value}', "table_consult_1")
+               set_value_database("table_insert_1", routing_number)
+
         except Exception as ex:
             logging.error(str(ex))
-            occurence(record)
 
-
-def occurence(record):
-    sqsService = SqsService
-    sqsService.send_messager_to_occurence(message_body=record['body'])
-    sqsService.delete_current_messager(receipt_handle=record['receiptHandle'])
-
-
-def set_value_database(value, table):
+def set_value_database(table: string, value: float) -> None:
     logging.info(f'Table: {table} - Value: {value}')

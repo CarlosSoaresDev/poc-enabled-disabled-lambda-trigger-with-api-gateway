@@ -5,7 +5,7 @@ payload = {
     {
       "messageId": "19dd0b57-b21e-4ac1-bd88-01bbb068cb78",
       "receiptHandle": "MessageReceiptHandle",
-      "body": "{\"StartSession\": \"schedule-by-minute\"}",
+      "body": "{\"StartSession\": true }",
       "attributes": {
         "ApproximateReceiveCount": "1",
         "SentTimestamp": "1523232000000",

@@ -1,9 +1,9 @@
 name: Infra poc event bridge schedule to sqs to lambda
 
 env:
-  service-name: transactions-processor
-  working-directory-build: ./app 
-  working-directory-root: ./ 
+  service-name: app-process-queue-one
+  working-directory-build: ./services/app_process_queue_one
+  working-directory-publish: ./infra/infra_process_queue_one
 
 on:
   push:
@@ -54,9 +54,9 @@ jobs:
           pip3 install -r requirements.txt -t layer/python/lib/python3.10/site-packages/
           cd layer
           ls -R
-          zip -r transactions-processor-layer.zip *
+          zip -r ${{env.service-name}}.zip *
           ls -R
-          aws s3 cp ./transactions-processor-layer.zip s3://s3-artefact-bucket
+          aws s3 cp ./${{env.service-name}}.zip s3://s3-artefact-bucket
           cd ..
           ls -R
           rm -r layer
@@ -68,9 +68,9 @@ jobs:
        run: |
           echo " ########## Start generate lambda app ##########"
           ls -R
-          zip -r transactions-processor.zip *
+          zip -r ${{env.service-name}}.zip *
           ls -R
-          aws s3 cp ./transactions-processor.zip s3://s3-artefact-bucket
+          aws s3 cp ./${{env.service-name}}.zip s3://s3-artefact-bucket
          
           echo " ########## Start generate lambda app ##########"
        working-directory: ${{env.working-directory-build}}  
@@ -81,6 +81,6 @@ jobs:
            aws cloudformation deploy \
            --template-file Template.yml \
            --capabilities CAPABILITY_NAMED_IAM \
-           --parameter-overrides  AccessKey=${{ secrets.AWS_ACCESS_KEY_ID }} SecretKey=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+           --parameter-overrides  LambdaTransactionProcessorFunctionName=${{ env.service-name }} \
            --stack-name ${{env.service-name}}   
-       working-directory: ${{env.working-directory-root}}/infra  
+       working-directory: ${{env.working-directory-publish}}  
