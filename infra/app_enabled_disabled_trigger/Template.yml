@@ -20,7 +20,7 @@ Resources:
       Name: !Sub '${LambdaTransactionProcessorFunctionName}-api'
       StageName: Prod
       Cors:
-        AllowMethods: "'POST,GET'"
+        AllowMethods: "'POST'"
         AllowHeaders: "'*'"
         AllowOrigin: "'*'"
         MaxAge: "'600'"
@@ -44,13 +44,6 @@ Resources:
       Timeout: 15
       MemorySize: 128
       Runtime: python3.10
-      Events:
-        ProxyApiRoot:
-          Type: Api
-          Properties:
-            RestApiId: !Ref ApiGatewayApi
-            Path: /UpdateTrigger
-            Method: POST
       Role: !GetAtt LambdaTransactionProcessorFunctionRole.Arn
       CodeUri: !Sub 's3://${S3ArtefactBucketName}/${LambdaTransactionProcessorFunctionName}.zip'
       Layers: 
@@ -59,6 +52,13 @@ Resources:
           Variables:
             ACCESS_KEY: !Ref AccessKey
             SECRET_KEY: !Ref SecretKey
+      Events:
+        ProxyApiRoot:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayApi
+            Path: /
+            Method: POST
 
   LambdaTransactionProcessorFunctionRole:
     Type: 'AWS::IAM::Role'
