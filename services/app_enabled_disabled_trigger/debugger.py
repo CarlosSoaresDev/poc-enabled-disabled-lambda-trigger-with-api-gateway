@@ -57,7 +57,7 @@ payload = {
     "time": "12/Mar/2020:19:03:58 +0000",
     "timeEpoch": 1583348638390
   },
-  "body": "{\"Sevice\":\"app-process_queue_one\",\"Enabled\": false}",
+  "body": "{\"Services\": [ {\"UUID\": \"27a2cc75-7d63-4235-b45a-be3c9ad9b324\",\"Enabled\": false },{\"UUID\": \"fa18b2f8-d7c9-4db0-8949-b57a67f1d3eb\",\"Enabled\": true}]}",
   "pathParameters": {
   },
   "isBase64Encoded": True,
@@ -67,4 +67,6 @@ payload = {
   }
 }
 
-lambda_handler(payload, None)
+response = lambda_handler(payload, None)
+
+print(response)

@@ -9,6 +9,10 @@ env:
   service-name-app-process-two: app-process-queue-two
   working-directory-app-process-two-build: ./services/app_process_queue_two
   working-directory-app-process-two-publish: ./infra/infra_process_queue_two
+  ### service three
+  service-name-app-enabled-disabled-trigger: app-enabled-disabled-trigger
+  working-directory-app-enabled-disabled-trigger-build: ./services/app_enabled_disabled_trigger
+  working-directory-app-enabled-disabled-trigger-publish: ./infra/app_enabled_disabled_trigger
 
 on:
   push:
@@ -92,7 +96,16 @@ jobs:
           ls -R
           aws s3 cp ./${{env.service-name-app-process-two}}.zip s3://s3-artefact-bucket         
           echo " ########## End generate lambda app ##########"
-       working-directory: ${{env.working-directory-app-process-two-build}}  
+       working-directory: ${{env.working-directory-app-process-two-build}} 
+     - name: Create release to app lambda [app-enabled-disabled-trigger ]
+       run: |
+          echo " ########## Start generate lambda app ##########"
+          ls -R
+          zip -r ${{env.service-name-app-enabled-disabled-trigger}}.zip *
+          ls -R
+          aws s3 cp ./${{env.service-name-app-enabled-disabled-trigger}}.zip s3://s3-artefact-bucket         
+          echo " ########## End generate lambda app ##########"
+       working-directory: ${{env.working-directory-app-enabled-disabled-trigger-build}}   
    
   deploy-app-process-queue-one:
     name: Deploy app process queue one      
@@ -147,3 +160,30 @@ jobs:
            --parameter-overrides  LambdaTransactionProcessorFunctionName=${{ env.service-name-app-process-two }} SQSQueueName=${{ env.service-name-app-process-two }}-queue EventBridgeScheduleByMinuteName=${{ env.service-name-app-process-two }}-scheduler \
            --stack-name ${{env.service-name-app-process-two}}   
        working-directory: ${{env.working-directory-app-process-two-publish}}  
+  
+  deploy-app-enabled-disabled-trigger:
+    name: Deploy app enabled disabled trigger     
+    runs-on: ubuntu-latest
+    needs: build
+    steps:  
+     - name: Checkout
+       uses: actions/checkout@master 
+     - name: root directory
+       run: ls -R
+       working-directory: ${{env.worker-directory-root}}         
+     - name: Configure AWS credentials
+       id: credentialsaws
+       uses: aws-actions/configure-aws-credentials@v1
+       with:
+         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+         aws-region: ${{ secrets.AWS_REGION }}
+     - name: AWS Deploy CloudFormation Stack
+       run: |
+           ls -R
+           aws cloudformation deploy \
+           --template-file Template.yml \
+           --capabilities CAPABILITY_NAMED_IAM \
+           --parameter-overrides  LambdaTransactionProcessorFunctionName=${{ env.service-name-app-enabled-disabled-trigger }} AccessKey=${{ secrets.AWS_ACCESS_KEY_ID }}  SecretKey=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+           --stack-name ${{env.service-name-app-enabled-disabled-trigger}}   
+       working-directory: ${{env.working-directory-app-enabled-disabled-trigger-publish}}  
