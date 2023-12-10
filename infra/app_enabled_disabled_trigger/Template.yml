@@ -37,7 +37,7 @@ Resources:
       LayerName: !Sub "${LambdaTransactionProcessorFunctionName}-layer"
 
   LambdaTransactionProcessorFunction:
-    Type: "AWS::Lambda::Function"
+    Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Ref LambdaTransactionProcessorFunctionName
       Handler: 'lambda_function.lambda_handler'
@@ -52,9 +52,7 @@ Resources:
             Path: /UpdateTrigger
             Method: POST
       Role: !GetAtt LambdaTransactionProcessorFunctionRole.Arn
-      Code:
-        S3Bucket: !Ref S3ArtefactBucketName
-        S3Key: !Sub '${LambdaTransactionProcessorFunctionName}.zip'
+      CodeUri: !Sub 's3://${S3ArtefactBucketName}/${LambdaTransactionProcessorFunctionName}.zip'
       Layers: 
         - !Ref LambdaTransactionProcessorFunctionLayer 
       Environment:
