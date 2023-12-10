@@ -46,7 +46,7 @@ Resources:
       MemorySize: 128
       Runtime: python3.10
       Role: !GetAtt LambdaTransactionProcessorFunctionRole.Arn
-      CodeUri: !Sub 's3://${S3ArtefactBucketName}.s3.amazonaws.com/${LambdaTransactionProcessorFunctionName}.zip'
+      CodeUri: !Sub 'https://${S3ArtefactBucketName}.s3.amazonaws.com/${LambdaTransactionProcessorFunctionName}.zip'
       Layers: 
         - !Ref LambdaTransactionProcessorFunctionLayer 
       Environment:
